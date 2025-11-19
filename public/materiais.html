@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Materiais</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Materiais</h1>
+
+  <form id="formMaterial">
+    <input type="text" id="nome" placeholder="Nome" required />
+    <input type="text" id="codigo" placeholder="Código" required />
+    <input type="text" id="tipo" placeholder="Tipo" />
+    <button type="submit">Cadastrar</button>
+  </form>
+
+  <table id="listaMateriais">
+    <thead>
+      <tr><th>ID</th><th>Nome</th><th>Código</th><th>Ações</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="script.js"></script>
+  <script>
+    async function carregarMateriais() {
+      const data = await api("/materiais");
+      const tbody = document.querySelector("#listaMateriais tbody");
+      tbody.innerHTML = "";
+
+      data.forEach(m => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${m.id}</td>
+            <td>${m.nome}</td>
+            <td>${m.codigo_patrimonio}</td>
+            <td>
+              <button onclick="remover(${m.id})">Excluir</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    document.querySelector("#formMaterial").onsubmit = async e => {
+      e.preventDefault();
+      await api("/materiais", "POST", {
+        nome: nome.value,
+        codigo_patrimonio: codigo.value,
+        tipo: tipo.value,
+      });
+      carregarMateriais();
+    };
+
+    async function remover(id) {
+      await api(`/materiais/${id}`, "DELETE");
+      carregarMateriais();
+    }
+
+    carregarMateriais();
+  </script>
+</body>
+</html>

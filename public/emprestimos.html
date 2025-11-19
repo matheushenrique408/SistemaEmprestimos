@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Empréstimos</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Empréstimos</h1>
+
+  <form id="formEmprestimo">
+    <select id="selMaterial" required></select>
+    <select id="selUsuario" required></select>
+    <input id="obs" placeholder="Observação (opcional)" />
+    <button type="submit">Registrar Empréstimo</button>
+  </form>
+
+  <h2>Empréstimos</h2>
+  <table id="listaEmprestimos">
+    <thead>
+      <tr><th>ID</th><th>Material</th><th>Usuário</th><th>Data Empréstimo</th><th>Data Devolução</th><th>Ações</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="script.js"></script>
+  <script>
+    async function carregarOpcoes() {
+      const mats = await api("/materiais");
+      const usuarios = await api("/usuarios");
+      const selMat = document.getElementById("selMaterial");
+      const selUsr = document.getElementById("selUsuario");
+      selMat.innerHTML = "<option value=''>--selecione--</option>";
+      selUsr.innerHTML = "<option value=''>--selecione--</option>";
+      mats.filter(m => m.status === "disponível").forEach(m => {
+        const o = document.createElement("option");
+        o.value = m.id;
+        o.text = `${m.nome} (${m.codigo_patrimonio})`;
+        selMat.appendChild(o);
+      });
+      usuarios.forEach(u => {
+        const o = document.createElement("option");
+        o.value = u.id;
+        o.text = u.nome;
+        selUsr.appendChild(o);
+      });
+    }
+
+    async function carregarEmprestimos() {
+      const list = await api("/emprestimos");
+      const tbody = document.querySelector("#listaEmprestimos tbody");
+      tbody.innerHTML = "";
+      list.forEach(e => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${e.id}</td>
+            <td>${e.Material ? e.Material.nome : ''}</td>
+            <td>${e.Usuario ? e.Usuario.nome : ''}</td>
+            <td>${new Date(e.data_emprestimo).toLocaleString()}</td>
+            <td>${e.data_devolucao ? new Date(e.data_devolucao).toLocaleString() : "-"}</td>
+            <td>
+              ${!e.data_devolucao ? `<button onclick="devolver(${e.id})">Devolver</button>` : ""}
+              <button onclick="removerEmp(${e.id})">Excluir</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    document.querySelector("#formEmprestimo").onsubmit = async e => {
+      e.preventDefault();
+      const matId = document.getElementById("selMaterial").value;
+      const usrId = document.getElementById("selUsuario").value;
+      const obs = document.getElementById("obs").value;
+      await api("/emprestimos", "POST", { materialId: Number(matId), usuarioId: Number(usrId), observacao: obs });
+      document.getElementById("obs").value = "";
+      await carregarOpcoes();
+      await carregarEmprestimos();
+    };
+
+    async function devolver(id) {
+      await api(`/emprestimos/${id}/devolver`, "PUT");
+      carregarOpcoes();
+      carregarEmprestimos();
+    }
+
+    async function removerEmp(id) {
+      if (!confirm("Confirma exclusão?")) return;
+      await api(`/emprestimos/${id}`, "DELETE");
+      carregarEmprestimos();
+    }
+
+    (async () => {
+      await carregarOpcoes();
+      await carregarEmprestimos();
+    })();
+  </script>
+</body>
+</html>

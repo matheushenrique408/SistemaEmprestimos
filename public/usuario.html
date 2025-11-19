@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Usuários / Responsáveis</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Usuários</h1>
+
+  <form id="formUsuario">
+    <input type="text" id="nomeU" placeholder="Nome" required />
+    <input type="text" id="emailU" placeholder="Email" />
+    <input type="text" id="telefoneU" placeholder="Telefone" />
+    <button type="submit">Cadastrar</button>
+  </form>
+
+  <table id="listaUsuarios">
+    <thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Ações</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="script.js"></script>
+  <script>
+    async function carregarUsuarios() {
+      const data = await api("/usuarios");
+      const tbody = document.querySelector("#listaUsuarios tbody");
+      tbody.innerHTML = "";
+      data.forEach(u => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${u.id}</td>
+            <td>${u.nome}</td>
+            <td>${u.email || ""}</td>
+            <td>
+              <button onclick="removerUsuario(${u.id})">Excluir</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    document.querySelector("#formUsuario").onsubmit = async (e) => {
+      e.preventDefault();
+      await api("/usuarios", "POST", {
+        nome: nomeU.value,
+        email: emailU.value,
+        telefone: telefoneU.value
+      });
+      nomeU.value = emailU.value = telefoneU.value = "";
+      carregarUsuarios();
+    };
+
+    async function removerUsuario(id) {
+      if (!confirm("Confirma exclusão?")) return;
+      await api(`/usuarios/${id}`, "DELETE");
+      carregarUsuarios();
+    }
+
+    carregarUsuarios();
+  </script>
+</body>
+</html>
